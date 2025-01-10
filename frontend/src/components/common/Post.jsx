@@ -10,7 +10,7 @@ import toast from "react-hot-toast";
 import LoadingSpinner from "./LoadingSpinner";
 import { formatPostDate } from "../../utils/date";
 
-const Post = ({ post }) => {
+const Post = ({ post, feedType }) => {
 	const [comment, setComment] = useState("");
 	const {data:authUser} = useQuery({queryKey:["authUser"]});
 	const queryClient = useQueryClient();
@@ -59,18 +59,21 @@ const Post = ({ post }) => {
 			}
 		},
 		onSuccess:(updatedLikes	)=>{
+			if(feedType=='likes'){
+				queryClient.invalidateQueries({queryKey:["posts"]});
+			}else{
+				queryClient.setQueryData(["posts"],(oldData)=>{
+					return oldData.map(p=>{
+						if(p._id === post._id){
+							return {...p,likes:updatedLikes}
+						}
+						return p;
+					})
+				})
+			}
 			//this is not the best UX, bc it will refetch all the posts
 			//queryClient.invalidateQueries({queryKey:["posts"]});
 			//instead update cache directly for that post
-
-			queryClient.setQueryData(["posts"],(oldData)=>{
-				return oldData.map(p=>{
-					if(p._id === post._id){
-						return {...p,likes:updatedLikes}
-					}
-					return p;
-				})
-			})
 		},
 		onError:()=>{
 			toast.error(error.message);
